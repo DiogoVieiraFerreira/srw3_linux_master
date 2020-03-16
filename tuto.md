@@ -56,3 +56,15 @@ To search for new updates and install them :
 - Save and close the file
 - Now restart the SSH services : 
     - `# systemctl restart sshd`
+
+#### Installation of PHP
+Install :  
+`# apt-get install php-fpm -y`
+
+#### Installation of Nginx
+Install :  
+`apt-get install nginx -y`
+
+#### Installation of MariaDB
+Install:
+`apt-get install mariadb-server -y`
