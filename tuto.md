@@ -130,6 +130,8 @@ Install php modules :
     sudo apt-get install php7.2-mbstring
     sudo apt-get install php7.2-gd
     sudo apt-get install php7.2-curl
+    sudo apt-get install php7.2-intl
+    sudo apt-get install php7.2-imagick
 ```
 
 #### 4. Configuration du client
