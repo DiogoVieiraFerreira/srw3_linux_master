@@ -8,10 +8,24 @@
 # Installation of Debian
 
 ## Hardware
-- **Ram :** 4GB
-- **Processor and core :** 2, 4
-- **Hardrive :** 15GB
+- **RAM :** 4GB
+- **Processeur(s) et coeur(s) :** 2, 4
+- **Espace de disque dur :** 15GB
+- **Carte réseaux :** 2
 
+## Carte réseau n°01 (Externe)
+
+**IP :** 192.168.1.128
+**Masque de sous réseau :** 255.255.255.0
+**Passerelle par défault :** 192.168.1.1
+**DNS :** 127.0.0.1
+
+## Carte réseau n°02 (Interne)
+
+**IP :** 
+**Masque de sous réseau :** 
+**Passerelle par défault :** 
+**DNS :** 
 
 ## Configuration
 
