@@ -26,9 +26,7 @@ _with a GUI_
 
 
 ## Commands
-> `$` : Represent the user's privilege  
-> `#` : Represent the root's privilege
-
+> All commands are executed by user's privilege, with sudo package
 
 ## Users
 > - **credentials :** root, ...
@@ -42,57 +40,82 @@ _with a GUI_
 ### Linux configuration
 #### Updating the debian system 
 To search for new updates and install them :  
-`# apt-get update`  
-`# apt-get upgrade`
+```bash
+    sudo apt update && sudo apt upgrade
+```
 
 #### Config SSH
 - Open terminal :
-    `$ sudo apt install openssh-server`
+    ```bash
+        sudo apt install openssh-server
+    ```
 - Open SSH config file :
-    - `# nano /etc/ssh/sshd_config`
+    ```bash
+        sudo nano /etc/ssh/sshd_config
+    ```
 - To deny the SSH access for all IP except specific IP add the next line : 
-    - `AllowUsers = @noxcaedibux.internet-box.ch,@192.168.1.44`
+    ```conf
+        AllowUsers = @noxcaedibux.internet-box.ch,@192.168.1.44
+    ```
     _noxcaedibux.internet-box.ch is a DNS of external administrator_
 - Save and close the file
 - Now restart the SSH services : 
-    - `# systemctl restart sshd`
+    ```bash
+        sudo systemctl restart sshd
+    ```
 
 #### Installation of PHP
 Install :  
-`# apt-get install php-fpm -y`
+```bash
+    sudo apt-get install php-fpm -y
+```
 
 #### Installation of Nginx
 Install :  
-`apt-get install nginx -y`
+```bash
+    sudo apt-get install nginx -y
+```
 
 #### Installation of MariaDB
 Install :  
-`apt-get install mariadb-server -y`
+```bash
+    sudo apt-get install mariadb-server -y
+```
 
 ### Installation nextcloud
 #### 1. Télécharger nextcloud
 Go to tmp :  
-`cd /tmp`
+```bash
+    cd /tmp
+```
 
 Download nextcloud zip :  
-`wget https://download.nextcloud.com/server/releases/nextcloud-18.0.2.zip`
+```bash
+    wget https://download.nextcloud.com/server/releases/nextcloud-18.0.2.zip
+```
 
 Unzip the nextcloud zip :  
-`unzip nextcloud-18.0.2.zip`
+```bash
+    unzip nextcloud-18.0.2.zip
+```
 
 move `nextcloud` in `/var/www` and change the owner :  
-`sudo chown -R www-data: /var/www/nextcloud`
+```bash
+    sudo chown -R www-data: /var/www/nextcloud
+```
 
 #### 2. Mise en place de la DB nextcloud
 Ouvrir mariaDB :  
-`sudo mariadb`
+```bash
+    sudo mariadb
+```
 
 Créer un nouvel utilisateur et lui donner tous les privilèges :  
-```bash
-CREATE USER nxtcloudadmin@localhost IDENTIFIED BY 'admin123';
-GRANT ALL PRIVILEGES ON nextcloud.* TO nxtcloudadmin@localhost IDENTIFIED BY 'admin123';
-flush privileges;
-exit;
+```mysql
+    CREATE USER nxtcloudadmin@localhost IDENTIFIED BY 'admin123';
+    GRANT ALL PRIVILEGES ON nextcloud.* TO nxtcloudadmin@localhost IDENTIFIED BY 'admin123';
+    flush privileges;
+    exit;
 ```
 
 Change global format to `Barracuda` :  
@@ -110,16 +133,24 @@ Select all DB for convert to baracuda format use the next command to generate co
 **Use previous generated commands!**
 
 Go to the next cloud dir :  
-    `cd /var/www/nextcloud`
+```bash
+    cd /var/www/nextcloud
+```
 
 Enable the maintenance mode :  
-    `sudo -u www-data php occ maintenance:mode --on`
+```bash
+    sudo -u www-data php occ maintenance:mode --on
+```
 
 Restart mariaDB to apply changes :   
-    `sudo systemctl restart mariadb`
+```bash
+    sudo systemctl restart mariadb
+```
 
 Change the format of nextcloud :  
-    `ALTER DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;`
+```mysql
+    ALTER DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```
 
 Modif the mysql config to use `utf8mb` :  
 ```bash
@@ -128,19 +159,22 @@ Modif the mysql config to use `utf8mb` :
 ```
 
 Disable maintenance mode :  
-    `sudo -u www-data php occ maintenance:mode --off`
+```bash
+    sudo -u www-data php occ maintenance:mode --off
+```
 
 #### 3. Configuration du serveur ngnix
+
 Mise en place de php pour ngnix :  
 ```bash
     sudo mkdir /etc/nginx/nginxconfig.io
     sudo nano /etc/nginx/nginxconfig.io/php_fastcgi.conf
 ```
 
-Inserer les données de configuration pour php :  
-```bash
+Insérer les données de configuration pour php :  
+```conf
     # 404
-    try_files $fastcgi_script_name =404;
+    try_files $fastcgi_script_name = 404;
 
     # default fastcgi_params
     include fastcgi_params;
@@ -157,7 +191,7 @@ Inserer les données de configuration pour php :
     fastcgi_param PHP_ADMIN_VALUE    "open_basedir=$base/:/usr/lib/php/:/tmp/";
 ```
 
-Install php modules :   
+Installation des modules php :   
 ```bash
     sudo apt-get install php7.2-mysql
     sudo apt-get install php7.2-zip
@@ -170,10 +204,12 @@ Install php modules :
 ```
 #### 4. Configuration du client
 créer le fichier nextcloud.conf :   
-`sudo nano  /etc/nginx/sites-available/nextcloud.conf`
+```bash
+    sudo nano  /etc/nginx/sites-available/nextcloud.conf
+```
 
 Insérer les données relative à notre site :  
-```bash
+```conf
     server {
         listen 192.168.1.54:80;
         listen [::]:80;
@@ -194,22 +230,95 @@ Insérer les données relative à notre site :
 ```
 
 Créer un lien symbolique pour activer le site :  
-`sudo ln -s /etc/nginx/sites-available/nextcloud.conf /etc/nginx/sites-enabled/`
+```bash
+    sudo ln -s /etc/nginx/sites-available/nextcloud.conf /etc/nginx/sites-enabled/
+```
 
 Supprimer le site par défaut :  
-`sudo rm /etc/nginx/sites-enabled/default`
+```bash
+    sudo rm /etc/nginx/sites-enabled/default
+```
+
+### DNS for ssl
+
+Install DNS and tools :  
+```bash
+    sudo apt-get install -y bind9 bind9utils bind9-doc dnsutils
+```
+
+Open `named.conf.local` :  
+```bash
+    sudo nano /etc/bind/named.conf.local
+```
+
+Insert the next informations and save the file :  
+```conf
+    acl slaves {
+        10.10.10.0/24;
+    };
+    acl internals {
+        127.0.0.0/8;
+        10.10.10.0/24;
+    };
+
+    view "internal" {
+        match-clients { internals;};
+        recursion yes;
+        zone «cpnv.local" {
+            type master;
+            file "/etc/bind/for.cpnv-int";
+            allow-transfer {slaves;};
+        };
+    };
+
+    view "external" {
+        match-clients { any;};
+        recursion no;
+        zone "cpnv.local" {
+            type master;
+            file "/etc/bind/for.cpnv-ext";
+            allow-transfer {slaves;};
+        };
+    };
+```
+
+Open the `for.cpnv-ext` to add bidings :  
+```bash
+    sudo nano /etc/bind/for.cpnv-ext
+```
+
+Insert the next data and save the file :  
+```conf
+    $TTL 86400 ; 1 day
+    @ IN SOA dns1.cpnv.local. root.cpnv.local. (
+        2011071001 ; serial
+        3600 ; refresh (1 hour)
+        1800 ; retry (30 minutes)
+        604800 ; expire (1 week)
+        86400 ; minimum (1 day)
+    );
+    @ IN NS dns1
+    @ IN NS dns2
+    nextcloud IN A 10.10.10.10
+
+    $ORIGIN .
+    $TTL 86400 ; 1 day
+    baitosoft.ch IN SOA dns1.cpnv.local. root.cpnv.local. (
+        2011071001 ; serial
+        3600 ; refresh (1 hour)
+        1800 ; retry (30 minutes)
+        1209605 ; expire (2 weeks 5 seconds)
+        86400 ; minimum (1 day)
+    )
+    NS dns1.cpnv.local. A 192.168.99.5
+    $ORIGIN baitosoft.ch.
+    nextcloud A 192.168.99.10
+```
 
 ### SSL
 
 Install ssl :  
 ```bash
     sudo apt install letsencrypt
-    systemctl restart nginx
-```
-### DNS
-
-Install dns and tools :  
-```bash
-    sudo apt-get install -y bind9 bind9utils bind9-doc dnsutils
-    sudo nano /etc/bind/named.conf.local
+    systemctl stop nginx
 ```
