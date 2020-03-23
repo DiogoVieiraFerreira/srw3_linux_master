@@ -46,7 +46,7 @@ To search for new updates and install them :
 `# apt-get upgrade`
 
 #### Config SSH
-- Open terminal:
+- Open terminal :
     `$ sudo apt install openssh-server`
 - Open SSH config file :
     - `# nano /etc/ssh/sshd_config`
@@ -95,14 +95,49 @@ flush privileges;
 exit;
 ```
 
+Change global format to `Barracuda` :  
+_Enabling MySQL 4-byte support_  
+```mysql
+    SET GLOBAL innodb_file_format=Barracuda;
+    SELECT NAME, SPACE, FILE_FORMAT FROM INFORMATION_SCHEMA.INNODB_SYS_TABLES WHERE NAME like "nextcloud%";
+```
+
+Select all DB for convert to baracuda format use the next command to generate commands :  
+```mysql
+    USE INFORMATION_SCHEMA;
+    SELECT CONCAT("ALTER TABLE ", TABLE_SCHEMA,".", TABLE_NAME, " ROW_FORMAT=DYNAMIC;") AS MySQLCMD FROM TABLES WHERE TABLE_SCHEMA = "nextcloud";
+```
+**Use previous generated commands!**
+
+Go to the next cloud dir :  
+    `cd /var/www/nextcloud`
+
+Enable the maintenance mode :  
+    `sudo -u www-data php occ maintenance:mode --on`
+
+Restart mariaDB to apply changes :   
+    `sudo systemctl restart mariadb`
+
+Change the format of nextcloud :  
+    `ALTER DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;`
+
+Modif the mysql config to use `utf8mb` :  
+```bash
+    sudo -u www-data php occ config:system:set mysql.utf8mb4 --type boolean --value="true"
+    sudo -u www-data php occ maintenance:mode --off
+```
+
+Disable maintenance mode :  
+    `sudo -u www-data php occ maintenance:mode --off`
+
 #### 3. Configuration du serveur ngnix
-Mise en place de php pour ngnix :
+Mise en place de php pour ngnix :  
 ```bash
     sudo mkdir /etc/nginx/nginxconfig.io
     sudo nano /etc/nginx/nginxconfig.io/php_fastcgi.conf
 ```
 
-Inserer les données de configuration pour php :
+Inserer les données de configuration pour php :  
 ```bash
     # 404
     try_files $fastcgi_script_name =404;
@@ -122,7 +157,7 @@ Inserer les données de configuration pour php :
     fastcgi_param PHP_ADMIN_VALUE    "open_basedir=$base/:/usr/lib/php/:/tmp/";
 ```
 
-Install php modules :  
+Install php modules :   
 ```bash
     sudo apt-get install php7.2-mysql
     sudo apt-get install php7.2-zip
@@ -133,12 +168,11 @@ Install php modules :
     sudo apt-get install php7.2-intl
     sudo apt-get install php7.2-imagick
 ```
-
 #### 4. Configuration du client
-créer le fichier nextcloud.conf :  
+créer le fichier nextcloud.conf :   
 `sudo nano  /etc/nginx/sites-available/nextcloud.conf`
 
-Insérer les données relative à notre site : 
+Insérer les données relative à notre site :  
 ```bash
     server {
         listen 192.168.1.54:80;
@@ -159,8 +193,23 @@ Insérer les données relative à notre site :
     }
 ```
 
-Créer un lien symbolique pour activer le site :
+Créer un lien symbolique pour activer le site :  
 `sudo ln -s /etc/nginx/sites-available/nextcloud.conf /etc/nginx/sites-enabled/`
 
-Supprimer le site par défaut :
+Supprimer le site par défaut :  
 `sudo rm /etc/nginx/sites-enabled/default`
+
+### SSL
+
+Install ssl :  
+```bash
+    sudo apt install letsencrypt
+    systemctl restart nginx
+```
+### DNS
+
+Install dns and tools :  
+```bash
+    sudo apt-get install -y bind9 bind9utils bind9-doc dnsutils
+    sudo nano /etc/bind/named.conf.local
+```
