@@ -22,10 +22,10 @@
 
 ## Carte réseau n°02 (Interne)
 
-**IP :** 
-**Masque de sous réseau :** 
-**Passerelle par défault :** 
-**DNS :** 
+**IP :** 10.10.10.10
+**Masque de sous réseau :** 255.255.255.0
+**Passerelle par défault :** 10.10.10.1
+**DNS :** 127.0.0.1
 
 ## Configuration
 
@@ -59,61 +59,61 @@ To search for new updates and install them :
 ```
 
 #### Config SSH
-- Open terminal :
+- Installer open-ssh terminal :
     ```bash
         sudo apt install openssh-server
     ```
-- Open SSH config file :
+- Ouvrir le fichier de configuration SSH :
     ```bash
         sudo nano /etc/ssh/sshd_config
     ```
-- To deny the SSH access for all IP except specific IP add the next line : 
+- Interdire l'accès à toutes les IP sauf les notres : 
     ```conf
         AllowUsers = @noxcaedibux.internet-box.ch,@192.168.1.44
     ```
-    _noxcaedibux.internet-box.ch is a DNS of external administrator_
-- Save and close the file
-- Now restart the SSH services : 
+    _noxcaedibux.internet-box.ch est l'adresse DNS d'un des administrateurs_
+- Sauvegarder et quittez le fichier
+- Redémarrez le service SSH : 
     ```bash
         sudo systemctl restart sshd
     ```
 
 #### Installation of PHP
-Install :  
+Installer php-fpm :  
 ```bash
     sudo apt-get install php-fpm -y
 ```
 
 #### Installation of Nginx
-Install :  
+Installer nginx :  
 ```bash
     sudo apt-get install nginx -y
 ```
 
 #### Installation of MariaDB
-Install :  
+Installer mariaDB :  
 ```bash
     sudo apt-get install mariadb-server -y
 ```
 
 ### Installation nextcloud
 #### 1. Télécharger nextcloud
-Go to tmp :  
+Aller dans le dossier tmp :  
 ```bash
     cd /tmp
 ```
 
-Download nextcloud zip :  
+télécharger nextcloud :  
 ```bash
     wget https://download.nextcloud.com/server/releases/nextcloud-18.0.2.zip
 ```
 
-Unzip the nextcloud zip :  
+Dézip le fichier zip `nextcloud` :  
 ```bash
     unzip nextcloud-18.0.2.zip
 ```
 
-move `nextcloud` in `/var/www` and change the owner :  
+Déplacer `nextcloud` dans `/var/www` et changer le propriétaire :  
 ```bash
     sudo chown -R www-data: /var/www/nextcloud
 ```
@@ -132,47 +132,47 @@ Créer un nouvel utilisateur et lui donner tous les privilèges :
     exit;
 ```
 
-Change global format to `Barracuda` :  
-_Enabling MySQL 4-byte support_  
+Changer le format de fichier de la DB nextcloud en `Barracuda` :  
+_Permet d'avoir le support des 4-byte (possibilité de gérer les smiley par exemple)_  
 ```mysql
     SET GLOBAL innodb_file_format=Barracuda;
     SELECT NAME, SPACE, FILE_FORMAT FROM INFORMATION_SCHEMA.INNODB_SYS_TABLES WHERE NAME like "nextcloud%";
 ```
-
-Select all DB for convert to baracuda format use the next command to generate commands :  
+ 
+Création de commandes pour convertir toutes les tables en `Barracuda` :
 ```mysql
     USE INFORMATION_SCHEMA;
     SELECT CONCAT("ALTER TABLE ", TABLE_SCHEMA,".", TABLE_NAME, " ROW_FORMAT=DYNAMIC;") AS MySQLCMD FROM TABLES WHERE TABLE_SCHEMA = "nextcloud";
 ```
-**Use previous generated commands!**
+**utiliser les commandes généré plus tôt pour tout convertir!**
 
-Go to the next cloud dir :  
+Aller dans le dossier de notre site :  
 ```bash
     cd /var/www/nextcloud
 ```
 
-Enable the maintenance mode :  
+active le mode maintenance :  
 ```bash
     sudo -u www-data php occ maintenance:mode --on
 ```
 
-Restart mariaDB to apply changes :   
+Redémarrer mariaDB pour appliquer les changements :   
 ```bash
     sudo systemctl restart mariadb
 ```
 
-Change the format of nextcloud :  
+Changer le format de la base de données nextcloud en `utf8mb4` :  
 ```mysql
     ALTER DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 ```
 
-Modif the mysql config to use `utf8mb` :  
+Mettre `utf8mb` comme format par default :  
 ```bash
     sudo -u www-data php occ config:system:set mysql.utf8mb4 --type boolean --value="true"
     sudo -u www-data php occ maintenance:mode --off
 ```
 
-Disable maintenance mode :  
+désactiver le mode maintenance :  
 ```bash
     sudo -u www-data php occ maintenance:mode --off
 ```
@@ -225,7 +225,7 @@ créer le fichier nextcloud.conf :
 Insérer les données relative à notre site :  
 ```conf
     server {
-        listen 192.168.1.54:80;
+        listen 192.168.1.128:80;
         listen [::]:80;
         root /var/www/nextcloud;
 
@@ -253,19 +253,19 @@ Supprimer le site par défaut :
     sudo rm /etc/nginx/sites-enabled/default
 ```
 
-### DNS for ssl
+### 5.Configuration d'un DNS
 
-Install DNS and tools :  
+Installer le DNS et les différents utilitaires :  
 ```bash
     sudo apt-get install -y bind9 bind9utils bind9-doc dnsutils
 ```
 
-Open `named.conf.local` :  
+Ouvrir le fichier `named.conf.local` :  
 ```bash
     sudo nano /etc/bind/named.conf.local
 ```
 
-Insert the next informations and save the file :  
+Insérer les données suivantes :    
 ```conf
     acl slaves {
         10.10.10.0/24;
@@ -278,7 +278,7 @@ Insert the next informations and save the file :
     view "internal" {
         match-clients { internals;};
         recursion yes;
-        zone «cpnv.local" {
+        zone "cpnv.local" {
             type master;
             file "/etc/bind/for.cpnv-int";
             allow-transfer {slaves;};
@@ -296,12 +296,14 @@ Insert the next informations and save the file :
     };
 ```
 
-Open the `for.cpnv-ext` to add bidings :  
+Création d'un DNS custom pour le `réseau interne` :  
+
+Ouvrir `for.cpnv-int` :  
 ```bash
     sudo nano /etc/bind/for.cpnv-ext
 ```
 
-Insert the next data and save the file :  
+Insérer les lignes suivantes :  
 ```conf
     $TTL 86400 ; 1 day
     @ IN SOA dns1.cpnv.local. root.cpnv.local. (
@@ -310,11 +312,21 @@ Insert the next data and save the file :
         1800 ; retry (30 minutes)
         604800 ; expire (1 week)
         86400 ; minimum (1 day)
-    );
+    )
+    ;
     @ IN NS dns1
     @ IN NS dns2
     nextcloud IN A 10.10.10.10
+```
+Création d'un DNS custom pour le `réseau externe` :  
 
+Ouvrir `for.cpnv-ext` :  
+```bash
+    sudo nano /etc/bind/for.cpnv-ext
+```
+
+Insérer les lignes suivantes :  
+```conf
     $ORIGIN .
     $TTL 86400 ; 1 day
     baitosoft.ch IN SOA dns1.cpnv.local. root.cpnv.local. (
@@ -324,15 +336,19 @@ Insert the next data and save the file :
         1209605 ; expire (2 weeks 5 seconds)
         86400 ; minimum (1 day)
     )
-    NS dns1.cpnv.local. A 192.168.99.5
+    NS dns1.cpnv.local. A 192.168.1.128
     $ORIGIN baitosoft.ch.
-    nextcloud A 192.168.99.10
+    nextcloud A 192.168.1.128
 ```
 
-### SSL
+Afin de vérifier la config, faire :
+```bash
+    sudo named-checkconf
+```
+### 6.SSL
 
 Install ssl :  
 ```bash
     sudo apt install letsencrypt
-    systemctl stop nginx
+    sudo systemctl stop nginx
 ```
